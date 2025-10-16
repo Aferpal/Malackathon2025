@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Salud Mental | Malackathon 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #eef4f8; color: #111827; }
+    .focus-ring:focus { outline: 2px solid #2563eb; outline-offset: 2px; }
+    .card { background: #ffffff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+    .accessibility-panel { position: fixed; top: 1rem; right: 1rem; background: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .5rem; font-size: .85rem; z-index: 50; }
+    .accessibility-panel button { display:block; margin:.25rem 0; width:100%; font-size:.8rem; }
+    .high-contrast { background-color: #000 !important; color: #fff !important; }
+    .high-contrast .card { background-color: #111 !important; color: #fff !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-6">
+
+  <!-- Panel accesibilidad -->
+  <div class="accessibility-panel" role="region" aria-label="Opciones de accesibilidad">
+    <strong class="block mb-1 text-sky-700">Accesibilidad</strong>
+    <button onclick="increaseFont()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1">Aumentar letra</button>
+    <button onclick="decreaseFont()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1">Reducir letra</button>
+    <button onclick="toggleContrast()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1">Alto contraste</button>
+    <button onclick="toggleNarrator()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1">Narrador</button>
+    <button onclick="showHelp()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1">Ayuda</button>
+  </div>
+
+  <!-- Encabezado -->
+  <header class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-sky-700 mb-2">🧠 Departamento de Salud Mental</h1>
+    <p class="text-slate-600 text-lg">Consulta, filtros rápidos, detalles y análisis gráfico</p>
+  </header>
+
+  <!-- Aquí iría tu buscador, filtros, resultados, etc. (código previo que ya tienes) -->
+
+  <footer class="mt-6 text-slate-600 text-sm">
+    © 2025 <span class="font-bold text-sky-700">Turingos</span> · Tu espacio seguro de consulta
+  </footer>
+
+<script>
+  // Control de accesibilidad
+  let fontSize = 100;
+  let narratorOn = false;
+
+  function increaseFont() {
+    fontSize += 10;
+    document.body.style.fontSize = fontSize + "%";
+  }
+  function decreaseFont() {
+    fontSize = Math.max(80, fontSize - 10);
+    document.body.style.fontSize = fontSize + "%";
+  }
+  function toggleContrast() {
+    document.body.classList.toggle("high-contrast");
+  }
+  function toggleNarrator() {
+    narratorOn = !narratorOn;
+    if (narratorOn) {
+      speak("Narrador activado. Los resultados se leerán automáticamente.");
+    } else {
+      speak("Narrador desactivado.");
+    }
+  }
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "es-ES";
+      window.speechSynthesis.speak(utter);
+    }
+  }
+  function showHelp() {
+    alert("Tutorial:\n\n1. Usa el buscador para escribir términos.\n2. Filtra con los desplegables.\n3. Haz clic en 'Buscar'.\n4. Los resultados se muestran en tabla y gráfico.\n5. Usa 'Ver detalles' para ver todos los campos.\n6. Puedes descargar CSV.\n\nOpciones de accesibilidad:\n- Aumentar o reducir letra.\n- Activar alto contraste.\n- Activar narrador automático.");
+  }
+
+  // Ejemplo: narrador lee resultados cuando se actualizan
+  function narrateResults(text) {
+    if (narratorOn) speak(text);
+  }
+</script>
+</body>
+</html>

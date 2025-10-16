@@ -2,17 +2,33 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Salud Mental | Malackathon 2025</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #eef4f8; color: #1f2937; }
-    .focus-ring:focus { outline: 2px solid #2563eb; outline-offset: 1px; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #eef4f8; color: #111827; }
+    .focus-ring:focus { outline: 2px solid #2563eb; outline-offset: 2px; }
     .card { background: #ffffff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+    .accessibility-panel { position: fixed; top: 1rem; right: 1rem; background: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .5rem; font-size: .85rem; z-index: 50; }
+    .accessibility-panel button { display:block; margin:.25rem 0; width:100%; font-size:.8rem; }
+    .high-contrast { background-color: #000 !important; color: #ffb300 !important; }
+    .high-contrast .card { background-color: #111 !important; color: #ffb300 !important; }
+    .high-contrast .focus-ring:focus { outline: 2px solid #ffb300; outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-6">
+
+  <!-- Panel accesibilidad -->
+  <div class="accessibility-panel" role="region" aria-label="Opciones de accesibilidad">
+    <strong class="block mb-1 text-sky-700">Accesibilidad</strong>
+    <button onclick="increaseFont()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1" type="button" aria-label="Aumentar tamaño de letra">Aumentar letra</button>
+    <button onclick="decreaseFont()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1" type="button" aria-label="Reducir tamaño de letra">Reducir letra</button>
+    <button onclick="toggleContrast()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1" type="button" aria-label="Activar o desactivar alto contraste">Alto contraste</button>
+    <button onclick="toggleNarrator()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1" type="button" aria-label="Activar o desactivar narrador">Narrador</button>
+    <button onclick="showHelp()" class="bg-sky-200 hover:bg-sky-300 rounded px-2 py-1" type="button" aria-label="Mostrar ayuda">Ayuda</button>
+  </div>
 
   <!-- Encabezado -->
   <header class="text-center mb-6">
@@ -21,53 +37,83 @@
   </header>
 
   <!-- Buscador + filtros discretos -->
-  <section class="card p-6 w-full max-w-5xl mb-4">
-    <h2 class="text-xl font-semibold text-sky-700 mb-4">🔍 Buscar</h2>
-    <div class="flex gap-2 mb-3">
-      <input id="q" type="text" placeholder="Búsqueda libre (ej: Hospital, fecha, nombre...)"
-             class="flex-1 p-2 border rounded focus-ring" />
-      <button id="searchBtn"
-              class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
-        Buscar
-      </button>
+  <section class="card p-6 w-full max-w-5xl mb-4" role="region" aria-labelledby="search-title">
+    <h2 id="search-title" class="text-xl font-semibold text-sky-700 mb-4">🔍 Buscar</h2>
+
+    <form id="searchForm" class="mb-3" role="search" aria-label="Formulario de búsqueda" onsubmit="return false;">
+      <div class="flex gap-2">
+        <label for="q" class="sr-only">Búsqueda libre</label>
+        <input id="q" name="q" type="text" placeholder="Búsqueda libre (ej: Hospital, fecha, nombre...)"
+               class="flex-1 p-2 border rounded focus-ring" aria-describedby="search-help" />
+        <button id="searchBtn" type="button"
+                class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
+          Buscar
+        </button>
+      </div>
+      <p id="search-help" class="text-xs text-slate-600 mt-2">
+        Puedes introducir múltiples términos separados por comas (ej: Andalucía,Madrid o Infarto,Diabetes).
+      </p>
+    </form>
+
+    <!-- Filtros discretos multivalor por coma -->
+    <div class="flex flex-wrap gap-2 text-xs" role="group" aria-label="Filtros rápidos">
+      <label for="filtroComunidad" class="sr-only">Filtrar por comunidad</label>
+      <input id="filtroComunidad" type="text" inputmode="text"
+             class="px-2 py-1 border rounded-full bg-slate-100 focus-ring"
+             placeholder="Comunidad (coma)"
+             aria-label="Filtrar por comunidad usando comas" />
+
+      <label for="filtroSexo" class="sr-only">Filtrar por sexo</label>
+      <input id="filtroSexo" type="text" inputmode="text"
+             class="px-2 py-1 border rounded-full bg-slate-100 focus-ring"
+             placeholder="Sexo (M,F)"
+             aria-label="Filtrar por sexo usando comas" />
+
+      <label for="filtroDiag" class="sr-only">Filtrar por diagnóstico principal</label>
+      <input id="filtroDiag" type="text" inputmode="text"
+             class="px-2 py-1 border rounded-full bg-slate-100 focus-ring"
+             placeholder="Diagnóstico (coma)"
+             aria-label="Filtrar por diagnóstico principal usando comas" />
+
+      <label for="filtroServicio" class="sr-only">Filtrar por servicio</label>
+      <input id="filtroServicio" type="text" inputmode="text"
+             class="px-2 py-1 border rounded-full bg-slate-100 focus-ring"
+             placeholder="Servicio (coma)"
+             aria-label="Filtrar por servicio usando comas" />
     </div>
-    <div class="flex flex-wrap gap-2 text-xs">
-      <select id="filtroComunidad" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
-        <option value="">Comunidad</option>
-      </select>
-      <select id="filtroSexo" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
-        <option value="">Sexo</option>
-      </select>
-      <select id="filtroDiag" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
-        <option value="">Diagnóstico</option>
-      </select>
-      <select id="filtroServicio" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
-        <option value="">Servicio</option>
-      </select>
+    <p class="text-xs text-slate-600 mt-2">
+      Escribe varios valores separados por comas para incluirlos (OR). Ej: Neumología,Cardiología.
+    </p>
+
+    <div class="mt-3">
+      <button id="resetFiltersBtn" type="button"
+              class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-4 rounded focus-ring">
+        Limpiar filtros
+      </button>
     </div>
   </section>
 
   <!-- Resultados -->
-  <section id="resultados" class="hidden card p-6 w-full max-w-6xl mb-6">
+  <section id="resultados" class="hidden card p-6 w-full max-w-6xl mb-6" role="region" aria-labelledby="results-title" aria-live="polite">
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold text-sky-700">📊 Resultados</h2>
-      <button id="downloadBtn"
+      <h2 id="results-title" class="text-xl font-semibold text-sky-700">📊 Resultados</h2>
+      <button id="downloadBtn" type="button"
               class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
         Descargar CSV
       </button>
     </div>
-    <div id="estadisticas" class="text-slate-700 mb-4 text-sm"></div>
+    <div id="estadisticas" class="text-slate-700 mb-4 text-sm" role="status" aria-live="polite"></div>
 
-    <div id="tabla" class="overflow-x-auto">
+    <div id="tabla" class="overflow-x-auto" role="region" aria-label="Tabla de resultados">
       <!-- Tabla se renderiza aquí -->
     </div>
 
-    <div class="mt-6">
-      <h3 class="text-lg font-semibold text-sky-700 mb-2">Distribución por diagnóstico principal</h3>
-      <canvas id="grafica" class="w-full h-64"></canvas>
+    <div class="mt-6" role="region" aria-labelledby="chart-title">
+      <h3 id="chart-title" class="text-lg font-semibold text-sky-700 mb-2">Distribución por diagnóstico principal</h3>
+      <canvas id="grafica" class="w-full h-64" role="img" aria-label="Gráfico de barras por diagnóstico principal"></canvas>
     </div>
 
-    <button id="resetBtn"
+    <button id="resetBtn" type="button"
             class="mt-6 w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
       Nueva consulta
     </button>
@@ -78,73 +124,60 @@
   </footer>
 
 <script>
-  // MOCK de prueba (extensible). Añade más campos según tu BD: todos se mostrarán en detalles y CSV.
-  const MOCK = [
-    {
-      "Comunidad Autónoma":"Andalucía","Nombre":"Juan Pérez","Fecha de nacimiento":"1985-03-12","Sexo":"M",
-      "CCAA Residencia":"Andalucía","Fecha de Ingreso":"2025-01-10","Circunstancia de Contacto":"Urgencias",
-      "Fecha de Fin Contacto":"2025-01-15","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"J18 Neumonía",
-      "Categoría":"Respiratorio","Servicio":"Neumología","Edad":40,"Reingreso":"No","Hospital":"Hospital Regional","Ingreso en UCI":"No","Días UCI":0
-    },
-    {
-      "Comunidad Autónoma":"Madrid","Nombre":"María López","Fecha de nacimiento":"1990-07-22","Sexo":"F",
-      "CCAA Residencia":"Madrid","Fecha de Ingreso":"2025-02-01","Circunstancia de Contacto":"Consulta programada",
-      "Fecha de Fin Contacto":"2025-02-03","Tipo Alta":"Traslado","Estancia Días":2,"Diagnóstico Principal":"E11 Diabetes Mellitus",
-      "Categoría":"Endocrino","Servicio":"Endocrinología","Edad":35,"Reingreso":"Sí","Hospital":"Hospital Clínico","Ingreso en UCI":"No","Días UCI":0
-    },
-    {
-      "Comunidad Autónoma":"Cataluña","Nombre":"Luis García","Fecha de nacimiento":"1978-11-05","Sexo":"M",
-      "CCAA Residencia":"Cataluña","Fecha de Ingreso":"2025-03-12","Circunstancia de Contacto":"Hospitalización",
-      "Fecha de Fin Contacto":"2025-03-20","Tipo Alta":"Exitus","Estancia Días":8,"Diagnóstico Principal":"I21 Infarto Agudo",
-      "Categoría":"Cardiología","Servicio":"Cardiología","Edad":47,"Reingreso":"No","Hospital":"Hospital Comarcal","Ingreso en UCI":"Sí","Días UCI":3
-    },
-    {
-      "Comunidad Autónoma":"Valencia","Nombre":"Ana Torres","Fecha de nacimiento":"1988-09-15","Sexo":"F",
-      "CCAA Residencia":"Valencia","Fecha de Ingreso":"2025-04-05","Circunstancia de Contacto":"Urgencias",
-      "Fecha de Fin Contacto":"2025-04-10","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"F32 Depresión",
-      "Categoría":"Psiquiatría","Servicio":"Salud Mental","Edad":36,"Reingreso":"No","Hospital":"Hospital General Valencia","Ingreso en UCI":"No","Días UCI":0
-    },
-    {
-      "Comunidad Autónoma":"Galicia","Nombre":"Pedro Fernández","Fecha de nacimiento":"1975-06-20","Sexo":"M",
-      "CCAA Residencia":"Galicia","Fecha de Ingreso":"2025-05-01","Circunstancia de Contacto":"Hospitalización",
-      "Fecha de Fin Contacto":"2025-05-15","Tipo Alta":"Traslado","Estancia Días":14,"Diagnóstico Principal":"C34 Cáncer Pulmón",
-      "Categoría":"Oncología","Servicio":"Oncología","Edad":50,"Reingreso":"Sí","Hospital":"CHUAC","Ingreso en UCI":"Sí","Días UCI":5
-    },
-    {
-      "Comunidad Autónoma":"País Vasco","Nombre":"Itziar Etxeberria","Fecha de nacimiento":"1995-11-30","Sexo":"F",
-      "CCAA Residencia":"País Vasco","Fecha de Ingreso":"2025-06-12","Circunstancia de Contacto":"Consulta programada",
-      "Fecha de Fin Contacto":"2025-06-14","Tipo Alta":"Domicilio","Estancia Días":2,"Diagnóstico Principal":"G40 Epilepsia",
-      "Categoría":"Neurología","Servicio":"Neurología","Edad":29,"Reingreso":"No","Hospital":"Hospital de Cruces","Ingreso en UCI":"No","Días UCI":0
-    },
-    {
-      "Comunidad Autónoma":"Murcia","Nombre":"Carlos Martínez","Fecha de nacimiento":"1982-01-25","Sexo":"M",
-      "CCAA Residencia":"Murcia","Fecha de Ingreso":"2025-07-03","Circunstancia de Contacto":"Urgencias",
-      "Fecha de Fin Contacto":"2025-07-08","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"I63 Ictus",
-      "Categoría":"Cirugía","Servicio":"Cirugía General","Edad":43,"Reingreso":"No","Hospital":"Hospital Virgen de la Arrixaca","Ingreso en UCI":"No","Días UCI":0
-    },
-    {
-      "Comunidad Autónoma":"Castilla y León","Nombre":"Laura Gómez","Fecha de nacimiento":"2000-12-10","Sexo":"F",
-      "CCAA Residencia":"Castilla y León","Fecha de Ingreso":"2025-08-20","Circunstancia de Contacto":"Hospitalización",
-      "Fecha de Fin Contacto":"2025-08-25","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"I63 Ictus",
-      "Categoría":"Nefrología","Servicio":"Nefrología","Edad":24,"Reingreso":"No","Hospital":"Hospital Clínico Valladolid","Ingreso en UCI":"No","Días UCI":0
-    },
-    {
-      "Comunidad Autónoma":"Canarias","Nombre":"Diego Hernández","Fecha de nacimiento":"1969-04-18","Sexo":"M",
-      "CCAA Residencia":"Canarias","Fecha de Ingreso":"2025-09-01","Circunstancia de Contacto":"Urgencias",
-      "Fecha de Fin Contacto":"2025-09-10","Tipo Alta":"Exitus","Estancia Días":9,"Diagnóstico Principal":"I63 Ictus",
-      "Categoría":"Neurología","Servicio":"Neurología","Edad":56,"Reingreso":"Sí","Hospital":"Hospital Universitario de Canarias","Ingreso en UCI":"Sí","Días UCI":4
-    },
-    {
-      "Comunidad Autónoma":"Aragón","Nombre":"Sofía Navarro","Fecha de nacimiento":"1993-02-14","Sexo":"F",
-      "CCAA Residencia":"Aragón","Fecha de Ingreso":"2025-10-05","Circunstancia de Contacto":"Consulta programada",
-      "Fecha de Fin Contacto":"2025-10-07","Tipo Alta":"Domicilio","Estancia Días":2,"Diagnóstico Principal":"M54 Lumbalgia",
-      "Categoría":"Rehabilitación","Servicio":"Rehabilitación","Edad":32,"Reingreso":"No","Hospital":"Hospital Miguel Servet","Ingreso en UCI":"No","Días UCI":0
+  // Control de accesibilidad
+  let fontSize = 100;
+  let narratorOn = false;
+
+  function increaseFont() {
+    fontSize += 10;
+    document.body.style.fontSize = fontSize + "%";
+  }
+  function decreaseFont() {
+    fontSize = Math.max(80, fontSize - 10);
+    document.body.style.fontSize = fontSize + "%";
+  }
+  function toggleContrast() {
+    document.body.classList.toggle("high-contrast");
+  }
+  function toggleNarrator() {
+    narratorOn = !narratorOn;
+    if (narratorOn) {
+      speak("Narrador activado. Los resultados se leerán automáticamente.");
+    } else {
+      speak("Narrador desactivado.");
     }
+  }
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "es-ES";
+      window.speechSynthesis.speak(utter);
+    }
+  }
+  function showHelp() {
+    alert("Tutorial:\n\n1. Usa el buscador para escribir términos.\n2. Filtra con los campos discretos bajo el buscador (puedes separar por comas).\n3. Pulsa 'Buscar'.\n4. Verás los resultados en tabla y el gráfico.\n5. Usa 'Ver detalles' para ver todos los campos del registro.\n6. Puedes descargar CSV.\n\nAccesibilidad:\n- Aumentar/reducir letra.\n- Alto contraste.\n- Narrador automático.");
+  }
+  // Narración al actualizar resultados
+  function narrateResults(text) { if (narratorOn) speak(text); }
+
+  // MOCK de 10 registros variados
+  const MOCK = [
+    {"Comunidad Autónoma":"Andalucía","Nombre":"Juan Pérez","Fecha de nacimiento":"1985-03-12","Sexo":"M","CCAA Residencia":"Andalucía","Fecha de Ingreso":"2025-01-10","Circunstancia de Contacto":"Urgencias","Fecha de Fin Contacto":"2025-01-15","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"J18 Neumonía","Categoría":"Respiratorio","Servicio":"Neumología","Edad":40,"Reingreso":"No","Hospital":"Hospital Regional","Ingreso en UCI":"No","Días UCI":0},
+    {"Comunidad Autónoma":"Madrid","Nombre":"María López","Fecha de nacimiento":"1990-07-22","Sexo":"F","CCAA Residencia":"Madrid","Fecha de Ingreso":"2025-02-01","Circunstancia de Contacto":"Consulta programada","Fecha de Fin Contacto":"2025-02-03","Tipo Alta":"Traslado","Estancia Días":2,"Diagnóstico Principal":"E11 Diabetes Mellitus","Categoría":"Endocrino","Servicio":"Endocrinología","Edad":35,"Reingreso":"Sí","Hospital":"Hospital Clínico","Ingreso en UCI":"No","Días UCI":0},
+    {"Comunidad Autónoma":"Cataluña","Nombre":"Luis García","Fecha de nacimiento":"1978-11-05","Sexo":"M","CCAA Residencia":"Cataluña","Fecha de Ingreso":"2025-03-12","Circunstancia de Contacto":"Hospitalización","Fecha de Fin Contacto":"2025-03-20","Tipo Alta":"Exitus","Estancia Días":8,"Diagnóstico Principal":"I21 Infarto Agudo","Categoría":"Cardiología","Servicio":"Cardiología","Edad":47,"Reingreso":"No","Hospital":"Hospital Comarcal","Ingreso en UCI":"Sí","Días UCI":3},
+    {"Comunidad Autónoma":"Valencia","Nombre":"Ana Torres","Fecha de nacimiento":"1988-09-15","Sexo":"F","CCAA Residencia":"Valencia","Fecha de Ingreso":"2025-04-05","Circunstancia de Contacto":"Urgencias","Fecha de Fin Contacto":"2025-04-10","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"F32 Depresión","Categoría":"Psiquiatría","Servicio":"Salud Mental","Edad":36,"Reingreso":"No","Hospital":"Hospital General Valencia","Ingreso en UCI":"No","Días UCI":0},
+    {"Comunidad Autónoma":"Galicia","Nombre":"Pedro Fernández","Fecha de nacimiento":"1975-06-20","Sexo":"M","CCAA Residencia":"Galicia","Fecha de Ingreso":"2025-05-01","Circunstancia de Contacto":"Hospitalización","Fecha de Fin Contacto":"2025-05-15","Tipo Alta":"Traslado","Estancia Días":14,"Diagnóstico Principal":"C34 Cáncer Pulmón","Categoría":"Oncología","Servicio":"Oncología","Edad":50,"Reingreso":"Sí","Hospital":"CHUAC","Ingreso en UCI":"Sí","Días UCI":5},
+    {"Comunidad Autónoma":"País Vasco","Nombre":"Itziar Etxeberria","Fecha de nacimiento":"1995-11-30","Sexo":"F","CCAA Residencia":"País Vasco","Fecha de Ingreso":"2025-06-12","Circunstancia de Contacto":"Consulta programada","Fecha de Fin Contacto":"2025-06-14","Tipo Alta":"Domicilio","Estancia Días":2,"Diagnóstico Principal":"G40 Epilepsia","Categoría":"Neurología","Servicio":"Neurología","Edad":29,"Reingreso":"No","Hospital":"Hospital de Cruces","Ingreso en UCI":"No","Días UCI":0},
+    {"Comunidad Autónoma":"Murcia","Nombre":"Carlos Martínez","Fecha de nacimiento":"1982-01-25","Sexo":"M","CCAA Residencia":"Murcia","Fecha de Ingreso":"2025-07-03","Circunstancia de Contacto":"Urgencias","Fecha de Fin Contacto":"2025-07-08","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"K35 Apendicitis","Categoría":"Cirugía","Servicio":"Cirugía General","Edad":43,"Reingreso":"No","Hospital":"Hospital Virgen de la Arrixaca","Ingreso en UCI":"No","Días UCI":0},
+    {"Comunidad Autónoma":"Castilla y León","Nombre":"Laura Gómez","Fecha de nacimiento":"2000-12-10","Sexo":"F","CCAA Residencia":"Castilla y León","Fecha de Ingreso":"2025-08-20","Circunstancia de Contacto":"Hospitalización","Fecha de Fin Contacto":"2025-08-25","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"N39 Infección urinaria","Categoría":"Nefrología","Servicio":"Nefrología","Edad":24,"Reingreso":"No","Hospital":"Hospital Clínico Valladolid","Ingreso en UCI":"No","Días UCI":0},
+    {"Comunidad Autónoma":"Canarias","Nombre":"Diego Hernández","Fecha de nacimiento":"1969-04-18","Sexo":"M","CCAA Residencia":"Canarias","Fecha de Ingreso":"2025-09-01","Circunstancia de Contacto":"Urgencias","Fecha de Fin Contacto":"2025-09-10","Tipo Alta":"Exitus","Estancia Días":9,"Diagnóstico Principal":"I63 Ictus","Categoría":"Neurología","Servicio":"Neurología","Edad":56,"Reingreso":"Sí","Hospital":"Hospital Universitario de Canarias","Ingreso en UCI":"Sí","Días UCI":4},
+    {"Comunidad Autónoma":"Aragón","Nombre":"Sofía Navarro","Fecha de nacimiento":"1993-02-14","Sexo":"F","CCAA Residencia":"Aragón","Fecha de Ingreso":"2025-10-05","Circunstancia de Contacto":"Consulta programada","Fecha de Fin Contacto":"2025-10-07","Tipo Alta":"Domicilio","Estancia Días":2,"Diagnóstico Principal":"M54 Lumbalgia","Categoría":"Rehabilitación","Servicio":"Rehabilitación","Edad":32,"Reingreso":"No","Hospital":"Hospital Miguel Servet","Ingreso en UCI":"No","Días UCI":0}
   ];
 
   // Refs
   const input = document.getElementById('q');
-  const button = document.getElementById('searchBtn');
+  const searchBtn = document.getElementById('searchBtn');
+  const resetFiltersBtn = document.getElementById('resetFiltersBtn');
   const resultados = document.getElementById('resultados');
   const estadisticas = document.getElementById('estadisticas');
   const tablaDiv = document.getElementById('tabla');
@@ -159,45 +192,60 @@
   let chart;
   let lastRows = [];
 
-  // Inicializar filtros con valores únicos del mock
-  function initFilters() {
-    const unique = key => [...new Set(MOCK.map(r => r[key]).filter(Boolean))];
-    unique("Comunidad Autónoma").forEach(c => filtroComunidad.innerHTML += `<option>${c}</option>`);
-    unique("Sexo").forEach(s => filtroSexo.innerHTML += `<option>${s}</option>`);
-    unique("Diagnóstico Principal").forEach(d => filtroDiag.innerHTML += `<option>${d}</option>`);
-    unique("Servicio").forEach(sv => filtroServicio.innerHTML += `<option>${sv}</option>`);
-  }
-  initFilters();
-
   // Eventos
-  button.addEventListener('click', handleQuery);
+  searchBtn.addEventListener('click', handleQuery);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') handleQuery(); });
-  resetBtn.addEventListener('click', () => {
-    resultados.classList.add('hidden');
-    input.value = '';
+  resetFiltersBtn.addEventListener('click', clearFilters);
+  resetBtn.addEventListener('click', clearAll);
+  downloadBtn.addEventListener('click', downloadCSV);
+
+  function clearFilters() {
     filtroComunidad.value = '';
     filtroSexo.value = '';
     filtroDiag.value = '';
     filtroServicio.value = '';
+    input.value = '';
+    resultados.classList.add('hidden');
     if (chart) chart.destroy();
-  });
-  downloadBtn.addEventListener('click', downloadCSV);
+    estadisticas.textContent = '';
+    tablaDiv.innerHTML = '';
+    narrateResults("Filtros limpiados. Puedes iniciar una nueva consulta.");
+  }
 
-  // Lógica de consulta (filtros + búsqueda libre)
+  function clearAll() { clearFilters(); }
+
+  // Utilidad: parsear lista por comas (OR)
+  function parseCommaList(value) {
+    return value
+      .split(',')
+      .map(v => v.trim())
+      .filter(v => v.length > 0);
+  }
+
+  // Lógica de consulta con filtros multivalor por coma + búsqueda libre multivalor
   function handleQuery() {
     const q = input.value.trim().toLowerCase();
     let filtered = MOCK.slice();
 
-    if (filtroComunidad.value) filtered = filtered.filter(r => r["Comunidad Autónoma"] === filtroComunidad.value);
-    if (filtroSexo.value) filtered = filtered.filter(r => r["Sexo"] === filtroSexo.value);
-    if (filtroDiag.value) filtered = filtered.filter(r => r["Diagnóstico Principal"] === filtroDiag.value);
-    if (filtroServicio.value) filtered = filtered.filter(r => r["Servicio"] === filtroServicio.value);
+    const comunidades = parseCommaList(filtroComunidad.value);
+    const sexos = parseCommaList(filtroSexo.value);
+    const diags = parseCommaList(filtroDiag.value);
+    const servicios = parseCommaList(filtroServicio.value);
+
+    if (comunidades.length) filtered = filtered.filter(r => comunidades.includes(r["Comunidad Autónoma"]));
+    if (sexos.length) filtered = filtered.filter(r => sexos.includes(r["Sexo"]));
+    if (diags.length) filtered = filtered.filter(r => diags.includes(r["Diagnóstico Principal"]));
+    if (servicios.length) filtered = filtered.filter(r => servicios.includes(r["Servicio"]));
 
     if (q) {
+      const queries = parseCommaList(q);
       filtered = filtered.filter(item =>
-        Object.values(item).some(val => String(val).toLowerCase().includes(q))
+        queries.some(query =>
+          Object.values(item).some(val => String(val).toLowerCase().includes(query))
+        )
       );
     }
+
     renderResults(filtered, q);
   }
 
@@ -207,25 +255,27 @@
     lastRows = rows;
 
     if (!rows.length) {
-      tablaDiv.innerHTML = `<p class="text-slate-600">No hay resultados para: "${query}"</p>`;
+      tablaDiv.innerHTML = `<p class="text-slate-700" role="alert">No hay resultados para: "${query}"</p>`;
       estadisticas.innerText = '';
       renderChart([]);
+      narrateResults(`Sin resultados para la consulta: ${query}.`);
       return;
     }
 
     // Estadísticas compactas
     const estancias = rows.map(r => Number(r["Estancia Días"] || 0));
-    const count = rows.length;
     const avgEstancia = estancias.length ? (estancias.reduce((a,b)=>a+b,0)/estancias.length).toFixed(2) : '—';
     const uciDays = rows.map(r => Number(r["Días UCI"] || 0));
     const totalUci = uciDays.reduce((a,b)=>a+b,0);
-    estadisticas.innerText = `Registros: ${count} · Estancia media: ${avgEstancia} días · Total días UCI: ${totalUci}`;
+    estadisticas.innerText = `Registros: ${rows.length} · Estancia media: ${avgEstancia} días · Total días UCI: ${totalUci}`;
 
     const cols = Object.keys(rows[0]); // columnas dinámicas
+
     const tableHeader = `
       <thead class="bg-sky-100">
-        <tr>${cols.map(c => `<th class="p-2 text-left text-slate-700 whitespace-nowrap">${c}</th>`).join('')}
-            <th class="p-2 text-left text-slate-700">Detalle</th>
+        <tr>
+          ${cols.map(c => `<th scope="col" class="p-2 text-left text-slate-700 whitespace-nowrap">${c}</th>`).join('')}
+          <th scope="col" class="p-2 text-left text-slate-700">Detalle</th>
         </tr>
       </thead>
     `;
@@ -235,11 +285,18 @@
         ${rows.map((r, idx) => `
           <tr class="border-b hover:bg-sky-50">
             ${cols.map(c => `<td class="p-2 whitespace-nowrap">${safe(r[c])}</td>`).join('')}
-            <td class="p-2"><button class="text-sky-700 underline" onclick="toggleDetails(${idx})">Ver detalles</button></td>
+            <td class="p-2">
+              <button class="text-sky-700 underline focus-ring"
+                      aria-expanded="false"
+                      aria-controls="details-${idx}"
+                      onclick="toggleDetails(${idx}, this)">
+                Ver detalles
+              </button>
+            </td>
           </tr>
           <tr id="details-${idx}" class="hidden bg-slate-50">
             <td colspan="${cols.length + 1}" class="p-2">
-              <div class="max-h-48 overflow-y-auto text-xs grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+              <div class="max-h-56 overflow-y-auto text-xs grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1" role="group" aria-label="Detalles del registro">
                 ${renderAllFields(r)}
               </div>
             </td>
@@ -249,7 +306,8 @@
     `;
 
     const table = `
-      <table class="w-full border-collapse bg-white rounded shadow text-sm">
+      <table class="w-full border-collapse bg-white rounded shadow text-sm" role="table" aria-describedby="table-caption">
+        <caption id="table-caption" class="sr-only">Tabla de resultados filtrados</caption>
         ${tableHeader}
         ${tableBody}
       </table>
@@ -257,20 +315,25 @@
     tablaDiv.innerHTML = table;
 
     renderChart(rows);
+    narrateResults(`Se han encontrado ${rows.length} resultados.`);
   }
 
   function safe(v) { return (v === undefined || v === null || v === '') ? '—' : v; }
 
-  // Muestra TODOS los campos en detalles
+  // Mostrar TODOS los campos en detalles con pares etiqueta-valor
   function renderAllFields(row) {
     return Object.entries(row).map(([k, v]) =>
       `<p><span class="font-semibold text-slate-700">${k}:</span> <span class="text-slate-800">${safe(v)}</span></p>`
     ).join('');
   }
 
-  function toggleDetails(idx) {
+  function toggleDetails(idx, btn) {
     const row = document.getElementById(`details-${idx}`);
+    const willShow = row.classList.contains('hidden');
     row.classList.toggle('hidden');
+    btn.setAttribute('aria-expanded', String(willShow));
+    btn.textContent = willShow ? 'Ocultar detalles' : 'Ver detalles';
+    btn.focus();
   }
 
   // Gráfico coherente con datos filtrados: distribución por Diagnóstico Principal
@@ -282,9 +345,9 @@
     });
 
     const ctx = grafica.getContext('2d');
-    if (chart) chart.destroy();
+    if (window.chartInstance) window.chartInstance.destroy();
 
-    chart = new Chart(ctx, {
+    window.chartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: Object.keys(counts),
@@ -324,7 +387,6 @@
       header.join(','),
       ...rows.map(r => header.map(k => {
         const val = String(r[k] ?? '');
-        // escape quotes and replace commas to prevent column splits
         return `"${val.replace(/"/g, '""').replace(/,/g, ';')}"`;
       }).join(','))
     ];

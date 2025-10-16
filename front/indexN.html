@@ -12,11 +12,32 @@
     .card { background: #ffffff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
     .accessibility-panel { position: fixed; top: 1rem; right: 1rem; background: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .5rem; font-size: .85rem; z-index: 50; }
     .accessibility-panel button { display:block; margin:.25rem 0; width:100%; font-size:.8rem; }
+
+    /* Alto contraste */
     .high-contrast { background-color: #000 !important; color: #ffb300 !important; }
     .high-contrast .card { background-color: #111 !important; color: #ffb300 !important; }
     .high-contrast .focus-ring:focus { outline: 2px solid #ffb300; outline-offset: 2px; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    /* 🔶 Adaptación de títulos y botones azules al naranja en alto contraste */
+    .high-contrast h1,
+    .high-contrast h2,
+    .high-contrast h3,
+    .high-contrast .text-sky-700 { color: #ffb300 !important; }
+
+    .high-contrast button.bg-sky-600,
+    .high-contrast button.bg-sky-200,
+    .high-contrast button.bg-slate-200 {
+        background-color: #ffb300 !important;
+        color: #000 !important;
+    }
+    .high-contrast button.bg-sky-600:hover,
+    .high-contrast button.bg-sky-200:hover,
+    .high-contrast button.bg-slate-200:hover {
+        background-color: #ff9800 !important; /* un tono más oscuro al pasar el ratón */
+        color: #000 !important;
+    }
   </style>
+
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-6">
 

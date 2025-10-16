@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salud Mental | Malackathon 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4fa;
+      color: #2c2c2c;
+    }
+    .focus-ring:focus {
+      outline: 3px solid #7c3aed;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-6">
+
+  <header class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-purple-700 mb-2">🧠 Departamento de Salud Mental</h1>
+    <p class="text-gray-600 text-lg">Consulta y análisis de datos clínicos</p>
+  </header>
+
+  <div class="mb-6">
+    <img src="https://png.pngtree.com/png-clipart/20230920/original/pngtree-mental-health-awareness-illustration-png-image_12948995.png"
+         alt="Ilustración salud mental"
+         class="w-32 mx-auto rounded-full shadow-lg"
+         aria-hidden="true" />
+  </div>
+
+  <section class="bg-purple-50 rounded-lg shadow-md p-6 w-full max-w-xl mb-6">
+    <h2 class="text-xl font-semibold text-purple-700 mb-4">🔍 Filtrar datos</h2>
+    <label for="campo" class="block mb-2 font-medium">Campo:</label>
+    <input type="text" id="campo" placeholder="Ej: edad, diagnóstico"
+           class="w-full p-2 border rounded focus-ring mb-4" />
+
+    <label for="valor" class="block mb-2 font-medium">Valor:</label>
+    <input type="text" id="valor" placeholder="Ej: 30, ansiedad"
+           class="w-full p-2 border rounded focus-ring mb-4" />
+
+    <button id="consultarBtn"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded focus-ring">
+      Consultar
+    </button>
+  </section>
+
+  <section id="resultados" class="hidden w-full max-w-xl bg-purple-50 rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-semibold text-purple-700 mb-4">📊 Resultados</h2>
+    <p id="estadisticas" class="text-gray-700 mb-4 text-sm"></p>
+    <canvas id="grafica" class="w-full h-64"></canvas>
+    <button id="resetBtn"
+            class="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded focus-ring">
+      Nueva consulta
+    </button>
+  </section>
+
+  <script>
+    const campo = document.getElementById('campo');
+    const valor = document.getElementById('valor');
+    const consultarBtn = document.getElementById('consultarBtn');
+    const resultados = document.getElementById('resultados');
+    const estadisticas = document.getElementById('estadisticas');
+    const grafica = document.getElementById('grafica');
+    const resetBtn = document.getElementById('resetBtn');
+
+    consultarBtn.addEventListener('click', () => {
+      // Simulación de datos
+      const datos = [
+        { paciente: 'Paciente 1', valor: 91 },
+        { paciente: 'Paciente 2', valor: 38 },
+        { paciente: 'Paciente 3', valor: 89 },
+        { paciente: 'Paciente 4', valor: 25 },
+        { paciente: 'Paciente 5', valor: 71 },
+        { paciente: 'Paciente 6', valor: 43 },
+        { paciente: 'Paciente 7', valor: 77 },
+        { paciente: 'Paciente 8', valor: 47 },
+        { paciente: 'Paciente 9', valor: 98 },
+        { paciente: 'Paciente 10', valor: 48 }
+      ];
+
+      resultados.classList.remove('hidden');
+
+      const valores = datos.map(d => d.valor);
+      const promedio = (valores.reduce((a, b) => a + b, 0) / valores.length).toFixed(2);
+      const maximo = Math.max(...valores);
+      const minimo = Math.min(...valores);
+
+      estadisticas.innerText = `Registros: ${valores.length} | Promedio: ${promedio} | Máx: ${maximo} | Mín: ${minimo}`;
+
+      new Chart(grafica, {
+        type: 'bar',
+        data: {
+          labels: datos.map(d => d.paciente),
+          datasets: [{
+            label: 'Nivel de ansiedad',
+            data: valores,
+            backgroundColor: 'rgba(124, 58, 237, 0.6)'
+          }]
+        }
+      });
+    });
+
+    resetBtn.addEventListener('click', () => {
+      resultados.classList.add('hidden');
+      campo.value = '';
+      valor.value = '';
+      grafica.getContext('2d').clearRect(0, 0, grafica.width, grafica.height);
+    });
+  </script>
+</body>
+</html>

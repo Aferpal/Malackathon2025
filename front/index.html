@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asistente de Consulta de Datos</title>
+  <style>
+    * {
+      margin: 0; 
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #e0f7f6, #ffffff);
+      color: #1f2d3d;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #215f63;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      font-size: 1.1rem;
+      color: #3c6d70;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 650px;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chat-input {
+      display: flex;
+      width: 100%;
+      border: 1px solid #cfe8e7;
+      border-radius: 50px;
+      padding: 0.75rem 1rem;
+      background: #f8fbfb;
+      transition: all 0.3s ease;
+    }
+
+    .chat-input:hover, .chat-input:focus-within {
+      border-color: #9fd6d3;
+      box-shadow: 0 0 8px rgba(159, 214, 211, 0.5);
+    }
+
+    input[type="text"] {
+      border: none;
+      outline: none;
+      flex: 1;
+      background: transparent;
+      font-size: 1rem;
+      color: #1f2d3d;
+    }
+
+    button {
+      border: none;
+      background: #4bb8a9;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: #3ea295;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      color: #6a8b8a;
+    }
+
+    .logo {
+      font-weight: 700;
+      color: #4bb8a9;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Asistente de Consulta de Datos</h1>
+    <p>Consulte los datos de interés de su paciente, al momento</p>
+  </header>
+
+  <main class="chat-container">
+    <div class="chat-input">
+      <input type="text" placeholder="Escribe aquí tu consulta..." />
+      <button>Enviar</button>
+    </div>
+    <div id="results" style="width:100%; margin-top:1.5rem;">
+          <!-- Aquí pintaremos respuestas y tablas -->
+    </div>
+    <div style="width:100%; margin-top:2rem;">
+      <h3 style="color:#215f63;">Distribución de ingresos por diagnóstico</h3>
+      <canvas id="chartDiagnosticos"></canvas>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 <span class="logo">Turingos</span> · Tu espacio seguro de consulta</p>
+  </footer>
+</body>
+<script>
+  // Datos mock (sustituibles por fetch a tu backend)
+  const MOCK = [
+    { paciente: 'ID-001', diagnostico: 'F32', fecha: '2025-01-10', hospital: 'Hospital Regional' },
+    { paciente: 'ID-002', diagnostico: 'F20', fecha: '2025-02-03', hospital: 'Hospital Clínico' },
+    { paciente: 'ID-003', diagnostico: 'F32', fecha: '2025-03-11', hospital: 'Hospital Comarcal' },
+    { paciente: 'ID-004', diagnostico: 'F10', fecha: '2025-04-22', hospital: 'Hospital Regional' }
+  ];
+
+  const input = document.querySelector('.chat-input input[type="text"]');
+  const button = document.querySelector('.chat-input button');
+  const results = document.getElementById('results');
+
+  // UX: enviar con Enter
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleQuery();
+  });
+
+  // Enviar con botón
+  button.addEventListener('click', handleQuery);
+
+  function handleQuery() {
+    const q = input.value.trim();
+    if (!q) {
+      renderMessage('Escribe una consulta. Ej: "Ingresos por F32 entre 2025-01-01 y 2025-04-30"');
+      return;
+    }
+
+    // Ejemplos de consultas soportadas mínimas:
+    // - "F32"
+    // - "Ingresos F32 2025-01-01 2025-04-30"
+    // - "Hospital Regional"
+    const params = parseQuery(q);
+    const filtered = filterData(MOCK, params);
+    renderResults(q, filtered);
+    renderChart(filtered);
+  }
+
+  // Parser mínimo: extrae diagnóstico, rango de fechas y hospital si aparecen
+  function parseQuery(q) {
+    const tokens = q.split(/\s+/);
+    const params = { diagnostico: null, fechaInicio: null, fechaFin: null, hospital: null };
+
+    // Diagnóstico: códigos tipo Fxx
+    const diagToken = tokens.find(t => /^F\d{2}$/.test(t));
+    if (diagToken) params.diagnostico = diagToken;
+
+    // Fechas ISO simples
+    const fechas = tokens.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t));
+    if (fechas[0]) params.fechaInicio = fechas[0];
+    if (fechas[1]) params.fechaFin = fechas[1];
+
+    // Hospital: si incluye la palabra “Hospital”, asumimos que es nombre completo
+    const hospitalIdx = tokens.findIndex(t => /hospital/i.test(t));
+    if (hospitalIdx >= 0) {
+      params.hospital = tokens.slice(hospitalIdx).join(' ')
+        .replace(/^[Hh]ospital\s*/,'Hospital ').trim();
+    }
+
+    return params;
+  }
+
+  function filterData(data, { diagnostico, fechaInicio, fechaFin, hospital }) {
+    let out = data.slice();
+
+    if (diagnostico) out = out.filter(r => r.diagnostico === diagnostico);
+    if (fechaInicio) out = out.filter(r => r.fecha >= fechaInicio);
+    if (fechaFin) out = out.filter(r => r.fecha <= fechaFin);
+    if (hospital) out = out.filter(r => r.hospital.toLowerCase().includes(hospital.toLowerCase()));
+
+    return out;
+  }
+
+  function renderMessage(text) {
+    results.innerHTML = `
+      <div style="background:#f8fbfb;border:1px solid #cfe8e7;border-radius:12px;padding:1rem;">
+        <p style="color:#3c6d70;">${text}</p>
+      </div>
+    `;
+  }
+
+  function renderResults(query, rows) {
+    if (!rows.length) {
+      renderMessage(`No hay resultados para: "${query}"`);
+      return;
+    }
+
+    const table = `
+      <div style="background:#fff;border:1px solid #cfe8e7;border-radius:16px;padding:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+          <p style="color:#3c6d70;">Resultados para: <strong style="color:#215f63;">${query}</strong></p>
+          <button onclick="downloadCSV()" style="border:none;background:#4bb8a9;color:#fff;padding:.4rem .8rem;border-radius:20px;cursor:pointer;">Descargar CSV</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="border-bottom:1px solid #cfe8e7;padding:.5rem;">Paciente</th>
+              <th style="border-bottom:1px solid #cfe8e7;padding:.5rem;">Diagnóstico</th>
+              <th style="border-bottom:1px solid #cfe8e7;padding:.5rem;">Fecha</th>
+              <th style="border-bottom:1px solid #cfe8e7;padding:.5rem;">Hospital</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td style="border-bottom:1px solid #eef5f5;padding:.5rem;">${r.paciente}</td>
+                <td style="border-bottom:1px solid #eef5f5;padding:.5rem;">${r.diagnostico}</td>
+                <td style="border-bottom:1px solid #eef5f5;padding:.5rem;">${r.fecha}</td>
+                <td style="border-bottom:1px solid #eef5f5;padding:.5rem;">${r.hospital}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    results.innerHTML = table;
+    // Guardamos última lista para exportar
+    window.__lastRows = rows;
+  }
+
+  let chart; // referencia global para no recrear infinitamente
+
+  function renderChart(data) {
+    const counts = {};
+    data.forEach(r => {
+      counts[r.diagnostico] = (counts[r.diagnostico] || 0) + 1;
+    });
+
+    const ctx = document.getElementById('chartDiagnosticos').getContext('2d');
+
+    // Si ya existe un gráfico, lo destruimos antes de crear otro
+    if (chart) {
+      chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{
+          label: 'Número de ingresos',
+          data: Object.values(counts),
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+
+
+  // Exportación rápida a CSV
+  function downloadCSV() {
+    const rows = window.__lastRows || [];
+    const header = ['paciente','diagnostico','fecha','hospital'];
+    const csv = [
+      header.join(','),
+      ...rows.map(r => [r.paciente, r.diagnostico, r.fecha, r.hospital].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'resultados.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</html>

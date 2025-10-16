@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindCare | Asistente de Bienestar Mental</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #e0f7f6, #ffffff);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ------------------------------
+       ANIMACIÓN DEL CEREBRO ILUMINADO
+    -------------------------------*/
+    @keyframes glowPulse {
+      0%, 100% {
+        filter: brightness(1) drop-shadow(0 0 2px #4bb8a9);
+      }
+      50% {
+        filter: brightness(1.8) drop-shadow(0 0 12px #4bb8a9);
+      }
+    }
+
+    @keyframes glowOverlay {
+      0%, 100% {
+        opacity: 0.2;
+      }
+      25% {
+        opacity: 0.6;
+        box-shadow: 0 0 20px 10px rgba(75, 184, 169, 0.5);
+      }
+      50% {
+        opacity: 0.1;
+      }
+      75% {
+        opacity: 0.5;
+        box-shadow: 0 0 25px 15px rgba(75, 184, 169, 0.6);
+      }
+    }
+
+    .animate-glow {
+      animation: glowPulse 2s infinite ease-in-out;
+    }
+
+    .glow-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: glowOverlay 3s infinite ease-in-out;
+    }
+
+    /* Barras animadas */
+    .bar {
+      height: 0;
+      transition: height 1s ease;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+  <!-- PANTALLA INICIAL -->
+  <section id="inicio" class="text-center fade-in">
+    <img src="https://images.vexels.com/media/users/3/252016/isolated/preview/16524027ec6ed72507a50aada309252d-trazo-de-color-rosa-del-cerebro-humano.png" alt="logo" class="w-20 mx-auto mb-4" />
+    <h1 class="text-2xl font-semibold text-teal-700 mb-2">DEPARTAMENTO DE SALUD MENTAL</h1>
+    <p class="text-gray-600 mb-8">Tu asistente de consulta de pacientes</p>
+
+    <div class="flex items-center justify-center gap-2 bg-white rounded-full shadow-md p-2 max-w-md mx-auto">
+      <input id="consulta" type="text" placeholder="Haz tu consulta" class="flex-1 p-2 outline-none rounded-full text-gray-700" />
+      <button id="enviarBtn" class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-full">Enviar</button>
+    </div>
+  </section>
+
+  <!-- ANIMACIÓN DEL CEREBRO (ILUMINACIÓN) -->
+  <section id="animacion" class="hidden fade-in flex flex-col items-center">
+    <div class="relative">
+      <img
+        src="https://images.vexels.com/media/users/3/252016/isolated/preview/16524027ec6ed72507a50aada309252d-trazo-de-color-rosa-del-cerebro-humano.png"
+        alt="Cerebro pensando"
+        class="w-32 mx-auto mb-4 animate-glow"
+      />
+      <div class="absolute inset-0 rounded-full glow-overlay"></div>
+    </div>
+    <p class="text-teal-700 mt-6 text-lg font-semibold">Analizando tu consulta...</p>
+  </section>
+
+  <!-- RESULTADOS -->
+  <section id="resultados" class="hidden fade-in text-center">
+    <h2 class="text-xl font-semibold text-teal-700 mb-6">Resultados de tu consulta</h2>
+
+    <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
+      <div>
+        <p class="text-sm mb-2 text-gray-700">Estrés</p>
+        <div class="bg-teal-100 w-full h-40 rounded-lg flex items-end justify-center">
+          <div class="bar bg-teal-500 w-8 rounded-t-lg" style="height: 0;"></div>
+        </div>
+      </div>
+      <div>
+        <p class="text-sm mb-2 text-gray-700">Ánimo</p>
+        <div class="bg-teal-100 w-full h-40 rounded-lg flex items-end justify-center">
+          <div class="bar bg-emerald-500 w-8 rounded-t-lg" style="height: 0;"></div>
+        </div>
+      </div>
+      <div>
+        <p class="text-sm mb-2 text-gray-700">Energía</p>
+        <div class="bg-teal-100 w-full h-40 rounded-lg flex items-end justify-center">
+          <div class="bar bg-cyan-500 w-8 rounded-t-lg" style="height: 0;"></div>
+        </div>
+      </div>
+    </div>
+
+    <button id="nuevaConsulta" class="mt-8 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-full">
+      Nueva consulta
+    </button>
+  </section>
+
+  <script>
+    const inicio = document.getElementById("inicio");
+    const animacion = document.getElementById("animacion");
+    const resultados = document.getElementById("resultados");
+    const enviarBtn = document.getElementById("enviarBtn");
+    const nuevaConsulta = document.getElementById("nuevaConsulta");
+    const barras = document.querySelectorAll(".bar");
+
+    enviarBtn.addEventListener("click", () => {
+      const texto = document.getElementById("consulta").value.trim();
+      if (!texto) return alert("Por favor escribe una consulta.");
+
+      // Paso 1: mostrar animación del cerebro
+      inicio.classList.add("hidden");
+      animacion.classList.remove("hidden");
+
+      // Paso 2: después de 3s mostrar resultados
+      setTimeout(() => {
+        animacion.classList.add("hidden");
+        resultados.classList.remove("hidden");
+
+        // Simular valores de las barras
+        barras[0].style.height = Math.random() * 100 + "px";
+        barras[1].style.height = Math.random() * 140 + "px";
+        barras[2].style.height = Math.random() * 80 + "px";
+      }, 3000);
+    });
+
+    nuevaConsulta.addEventListener("click", () => {
+      resultados.classList.add("hidden");
+      inicio.classList.remove("hidden");
+      barras.forEach(bar => bar.style.height = "0");
+      document.getElementById("consulta").value = "";
+    });
+  </script>
+</body>
+</html>

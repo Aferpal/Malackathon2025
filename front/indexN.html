@@ -1,62 +1,340 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <title>
-            Turingos Malackathon 2025
-        </title>
-        <style>
-            
-            body{
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salud Mental | Malackathon 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #eef4f8; color: #1f2937; }
+    .focus-ring:focus { outline: 2px solid #2563eb; outline-offset: 1px; }
+    .card { background: #ffffff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-6">
 
-                background: steelblue;
-                font-family: Roboto, Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-                font: x-large;
-                color: aliceblue; /* Color pal texto */
-                
+  <!-- Encabezado -->
+  <header class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-sky-700 mb-2">🧠 Departamento de Salud Mental</h1>
+    <p class="text-slate-600 text-lg">Consulta, filtros rápidos, detalles y análisis gráfico</p>
+  </header>
 
-            }
-            .page{
+  <!-- Buscador + filtros discretos -->
+  <section class="card p-6 w-full max-w-5xl mb-4">
+    <h2 class="text-xl font-semibold text-sky-700 mb-4">🔍 Buscar</h2>
+    <div class="flex gap-2 mb-3">
+      <input id="q" type="text" placeholder="Búsqueda libre (ej: Hospital, fecha, nombre...)"
+             class="flex-1 p-2 border rounded focus-ring" />
+      <button id="searchBtn"
+              class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
+        Buscar
+      </button>
+    </div>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <select id="filtroComunidad" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
+        <option value="">Comunidad</option>
+      </select>
+      <select id="filtroSexo" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
+        <option value="">Sexo</option>
+      </select>
+      <select id="filtroDiag" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
+        <option value="">Diagnóstico</option>
+      </select>
+      <select id="filtroServicio" class="px-2 py-1 border rounded-full bg-slate-100 focus-ring">
+        <option value="">Servicio</option>
+      </select>
+    </div>
+  </section>
 
-                max-width: 960px;
-                margin: 0 auto;
+  <!-- Resultados -->
+  <section id="resultados" class="hidden card p-6 w-full max-w-6xl mb-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold text-sky-700">📊 Resultados</h2>
+      <button id="downloadBtn"
+              class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
+        Descargar CSV
+      </button>
+    </div>
+    <div id="estadisticas" class="text-slate-700 mb-4 text-sm"></div>
 
-            }
-            .card{
-                
-                background: -webkit-radial-gradient(blue, white);
-                max-width: 890px;
-                margin: 0 auto;
-                border-radius: 900px;
-                
-            }
-            .centrado{
-                text-align: center;
-            }
-        </style>
+    <div id="tabla" class="overflow-x-auto">
+      <!-- Tabla se renderiza aquí -->
+    </div>
 
-    </head>
+    <div class="mt-6">
+      <h3 class="text-lg font-semibold text-sky-700 mb-2">Distribución por diagnóstico principal</h3>
+      <canvas id="grafica" class="w-full h-64"></canvas>
+    </div>
 
-    <body>
-        <header>
-            <h1 class="centrado">
-                Asistente de Consultas
-            </h1>
-            <p class="centrado">
-                Sus consultas, al momento
-            </p>
-        </header>
+    <button id="resetBtn"
+            class="mt-6 w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded focus-ring">
+      Nueva consulta
+    </button>
+  </section>
 
-        <main class="Asistente">
-            <div class="Chat Input">
-                <img src="https://images.vexels.com/media/users/3/252016/isolated/preview/16524027ec6ed72507a50aada309252d-trazo-de-color-rosa-del-cerebro-humano.png"alt="logo" width="300"/>
-                <input type="text"Escribe tu consulta/>
-                <button>Enviar</button>
-            </div>
-        </main>
+  <footer class="mt-6 text-slate-600 text-sm">
+    © 2025 <span class="font-bold text-sky-700">Turingos</span> · Tu espacio seguro de consulta
+  </footer>
 
+<script>
+  // MOCK de prueba (extensible). Añade más campos según tu BD: todos se mostrarán en detalles y CSV.
+  const MOCK = [
+    {
+      "Comunidad Autónoma":"Andalucía","Nombre":"Juan Pérez","Fecha de nacimiento":"1985-03-12","Sexo":"M",
+      "CCAA Residencia":"Andalucía","Fecha de Ingreso":"2025-01-10","Circunstancia de Contacto":"Urgencias",
+      "Fecha de Fin Contacto":"2025-01-15","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"J18 Neumonía",
+      "Categoría":"Respiratorio","Servicio":"Neumología","Edad":40,"Reingreso":"No","Hospital":"Hospital Regional","Ingreso en UCI":"No","Días UCI":0
+    },
+    {
+      "Comunidad Autónoma":"Madrid","Nombre":"María López","Fecha de nacimiento":"1990-07-22","Sexo":"F",
+      "CCAA Residencia":"Madrid","Fecha de Ingreso":"2025-02-01","Circunstancia de Contacto":"Consulta programada",
+      "Fecha de Fin Contacto":"2025-02-03","Tipo Alta":"Traslado","Estancia Días":2,"Diagnóstico Principal":"E11 Diabetes Mellitus",
+      "Categoría":"Endocrino","Servicio":"Endocrinología","Edad":35,"Reingreso":"Sí","Hospital":"Hospital Clínico","Ingreso en UCI":"No","Días UCI":0
+    },
+    {
+      "Comunidad Autónoma":"Cataluña","Nombre":"Luis García","Fecha de nacimiento":"1978-11-05","Sexo":"M",
+      "CCAA Residencia":"Cataluña","Fecha de Ingreso":"2025-03-12","Circunstancia de Contacto":"Hospitalización",
+      "Fecha de Fin Contacto":"2025-03-20","Tipo Alta":"Exitus","Estancia Días":8,"Diagnóstico Principal":"I21 Infarto Agudo",
+      "Categoría":"Cardiología","Servicio":"Cardiología","Edad":47,"Reingreso":"No","Hospital":"Hospital Comarcal","Ingreso en UCI":"Sí","Días UCI":3
+    },
+    {
+      "Comunidad Autónoma":"Valencia","Nombre":"Ana Torres","Fecha de nacimiento":"1988-09-15","Sexo":"F",
+      "CCAA Residencia":"Valencia","Fecha de Ingreso":"2025-04-05","Circunstancia de Contacto":"Urgencias",
+      "Fecha de Fin Contacto":"2025-04-10","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"F32 Depresión",
+      "Categoría":"Psiquiatría","Servicio":"Salud Mental","Edad":36,"Reingreso":"No","Hospital":"Hospital General Valencia","Ingreso en UCI":"No","Días UCI":0
+    },
+    {
+      "Comunidad Autónoma":"Galicia","Nombre":"Pedro Fernández","Fecha de nacimiento":"1975-06-20","Sexo":"M",
+      "CCAA Residencia":"Galicia","Fecha de Ingreso":"2025-05-01","Circunstancia de Contacto":"Hospitalización",
+      "Fecha de Fin Contacto":"2025-05-15","Tipo Alta":"Traslado","Estancia Días":14,"Diagnóstico Principal":"C34 Cáncer Pulmón",
+      "Categoría":"Oncología","Servicio":"Oncología","Edad":50,"Reingreso":"Sí","Hospital":"CHUAC","Ingreso en UCI":"Sí","Días UCI":5
+    },
+    {
+      "Comunidad Autónoma":"País Vasco","Nombre":"Itziar Etxeberria","Fecha de nacimiento":"1995-11-30","Sexo":"F",
+      "CCAA Residencia":"País Vasco","Fecha de Ingreso":"2025-06-12","Circunstancia de Contacto":"Consulta programada",
+      "Fecha de Fin Contacto":"2025-06-14","Tipo Alta":"Domicilio","Estancia Días":2,"Diagnóstico Principal":"G40 Epilepsia",
+      "Categoría":"Neurología","Servicio":"Neurología","Edad":29,"Reingreso":"No","Hospital":"Hospital de Cruces","Ingreso en UCI":"No","Días UCI":0
+    },
+    {
+      "Comunidad Autónoma":"Murcia","Nombre":"Carlos Martínez","Fecha de nacimiento":"1982-01-25","Sexo":"M",
+      "CCAA Residencia":"Murcia","Fecha de Ingreso":"2025-07-03","Circunstancia de Contacto":"Urgencias",
+      "Fecha de Fin Contacto":"2025-07-08","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"I63 Ictus",
+      "Categoría":"Cirugía","Servicio":"Cirugía General","Edad":43,"Reingreso":"No","Hospital":"Hospital Virgen de la Arrixaca","Ingreso en UCI":"No","Días UCI":0
+    },
+    {
+      "Comunidad Autónoma":"Castilla y León","Nombre":"Laura Gómez","Fecha de nacimiento":"2000-12-10","Sexo":"F",
+      "CCAA Residencia":"Castilla y León","Fecha de Ingreso":"2025-08-20","Circunstancia de Contacto":"Hospitalización",
+      "Fecha de Fin Contacto":"2025-08-25","Tipo Alta":"Domicilio","Estancia Días":5,"Diagnóstico Principal":"I63 Ictus",
+      "Categoría":"Nefrología","Servicio":"Nefrología","Edad":24,"Reingreso":"No","Hospital":"Hospital Clínico Valladolid","Ingreso en UCI":"No","Días UCI":0
+    },
+    {
+      "Comunidad Autónoma":"Canarias","Nombre":"Diego Hernández","Fecha de nacimiento":"1969-04-18","Sexo":"M",
+      "CCAA Residencia":"Canarias","Fecha de Ingreso":"2025-09-01","Circunstancia de Contacto":"Urgencias",
+      "Fecha de Fin Contacto":"2025-09-10","Tipo Alta":"Exitus","Estancia Días":9,"Diagnóstico Principal":"I63 Ictus",
+      "Categoría":"Neurología","Servicio":"Neurología","Edad":56,"Reingreso":"Sí","Hospital":"Hospital Universitario de Canarias","Ingreso en UCI":"Sí","Días UCI":4
+    },
+    {
+      "Comunidad Autónoma":"Aragón","Nombre":"Sofía Navarro","Fecha de nacimiento":"1993-02-14","Sexo":"F",
+      "CCAA Residencia":"Aragón","Fecha de Ingreso":"2025-10-05","Circunstancia de Contacto":"Consulta programada",
+      "Fecha de Fin Contacto":"2025-10-07","Tipo Alta":"Domicilio","Estancia Días":2,"Diagnóstico Principal":"M54 Lumbalgia",
+      "Categoría":"Rehabilitación","Servicio":"Rehabilitación","Edad":32,"Reingreso":"No","Hospital":"Hospital Miguel Servet","Ingreso en UCI":"No","Días UCI":0
+    }
+  ];
 
-        <footer>
-            <p>© 2025 <span class="logo">Turingos</span>-Tu espacio seguro de consultas</p>
-        </footer>
-    </body>
+  // Refs
+  const input = document.getElementById('q');
+  const button = document.getElementById('searchBtn');
+  const resultados = document.getElementById('resultados');
+  const estadisticas = document.getElementById('estadisticas');
+  const tablaDiv = document.getElementById('tabla');
+  const grafica = document.getElementById('grafica');
+  const resetBtn = document.getElementById('resetBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const filtroComunidad = document.getElementById('filtroComunidad');
+  const filtroSexo = document.getElementById('filtroSexo');
+  const filtroDiag = document.getElementById('filtroDiag');
+  const filtroServicio = document.getElementById('filtroServicio');
+
+  let chart;
+  let lastRows = [];
+
+  // Inicializar filtros con valores únicos del mock
+  function initFilters() {
+    const unique = key => [...new Set(MOCK.map(r => r[key]).filter(Boolean))];
+    unique("Comunidad Autónoma").forEach(c => filtroComunidad.innerHTML += `<option>${c}</option>`);
+    unique("Sexo").forEach(s => filtroSexo.innerHTML += `<option>${s}</option>`);
+    unique("Diagnóstico Principal").forEach(d => filtroDiag.innerHTML += `<option>${d}</option>`);
+    unique("Servicio").forEach(sv => filtroServicio.innerHTML += `<option>${sv}</option>`);
+  }
+  initFilters();
+
+  // Eventos
+  button.addEventListener('click', handleQuery);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') handleQuery(); });
+  resetBtn.addEventListener('click', () => {
+    resultados.classList.add('hidden');
+    input.value = '';
+    filtroComunidad.value = '';
+    filtroSexo.value = '';
+    filtroDiag.value = '';
+    filtroServicio.value = '';
+    if (chart) chart.destroy();
+  });
+  downloadBtn.addEventListener('click', downloadCSV);
+
+  // Lógica de consulta (filtros + búsqueda libre)
+  function handleQuery() {
+    const q = input.value.trim().toLowerCase();
+    let filtered = MOCK.slice();
+
+    if (filtroComunidad.value) filtered = filtered.filter(r => r["Comunidad Autónoma"] === filtroComunidad.value);
+    if (filtroSexo.value) filtered = filtered.filter(r => r["Sexo"] === filtroSexo.value);
+    if (filtroDiag.value) filtered = filtered.filter(r => r["Diagnóstico Principal"] === filtroDiag.value);
+    if (filtroServicio.value) filtered = filtered.filter(r => r["Servicio"] === filtroServicio.value);
+
+    if (q) {
+      filtered = filtered.filter(item =>
+        Object.values(item).some(val => String(val).toLowerCase().includes(q))
+      );
+    }
+    renderResults(filtered, q);
+  }
+
+  // Render de resultados: tabla + detalles completos + gráfico coherente
+  function renderResults(rows, query) {
+    resultados.classList.remove('hidden');
+    lastRows = rows;
+
+    if (!rows.length) {
+      tablaDiv.innerHTML = `<p class="text-slate-600">No hay resultados para: "${query}"</p>`;
+      estadisticas.innerText = '';
+      renderChart([]);
+      return;
+    }
+
+    // Estadísticas compactas
+    const estancias = rows.map(r => Number(r["Estancia Días"] || 0));
+    const count = rows.length;
+    const avgEstancia = estancias.length ? (estancias.reduce((a,b)=>a+b,0)/estancias.length).toFixed(2) : '—';
+    const uciDays = rows.map(r => Number(r["Días UCI"] || 0));
+    const totalUci = uciDays.reduce((a,b)=>a+b,0);
+    estadisticas.innerText = `Registros: ${count} · Estancia media: ${avgEstancia} días · Total días UCI: ${totalUci}`;
+
+    const cols = Object.keys(rows[0]); // columnas dinámicas
+    const tableHeader = `
+      <thead class="bg-sky-100">
+        <tr>${cols.map(c => `<th class="p-2 text-left text-slate-700 whitespace-nowrap">${c}</th>`).join('')}
+            <th class="p-2 text-left text-slate-700">Detalle</th>
+        </tr>
+      </thead>
+    `;
+
+    const tableBody = `
+      <tbody>
+        ${rows.map((r, idx) => `
+          <tr class="border-b hover:bg-sky-50">
+            ${cols.map(c => `<td class="p-2 whitespace-nowrap">${safe(r[c])}</td>`).join('')}
+            <td class="p-2"><button class="text-sky-700 underline" onclick="toggleDetails(${idx})">Ver detalles</button></td>
+          </tr>
+          <tr id="details-${idx}" class="hidden bg-slate-50">
+            <td colspan="${cols.length + 1}" class="p-2">
+              <div class="max-h-48 overflow-y-auto text-xs grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                ${renderAllFields(r)}
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+
+    const table = `
+      <table class="w-full border-collapse bg-white rounded shadow text-sm">
+        ${tableHeader}
+        ${tableBody}
+      </table>
+    `;
+    tablaDiv.innerHTML = table;
+
+    renderChart(rows);
+  }
+
+  function safe(v) { return (v === undefined || v === null || v === '') ? '—' : v; }
+
+  // Muestra TODOS los campos en detalles
+  function renderAllFields(row) {
+    return Object.entries(row).map(([k, v]) =>
+      `<p><span class="font-semibold text-slate-700">${k}:</span> <span class="text-slate-800">${safe(v)}</span></p>`
+    ).join('');
+  }
+
+  function toggleDetails(idx) {
+    const row = document.getElementById(`details-${idx}`);
+    row.classList.toggle('hidden');
+  }
+
+  // Gráfico coherente con datos filtrados: distribución por Diagnóstico Principal
+  function renderChart(data) {
+    const counts = {};
+    data.forEach(r => {
+      const k = r["Diagnóstico Principal"] || 'Sin diagnóstico';
+      counts[k] = (counts[k] || 0) + 1;
+    });
+
+    const ctx = grafica.getContext('2d');
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{
+          label: 'Casos filtrados por diagnóstico principal',
+          data: Object.values(counts),
+          backgroundColor: 'rgba(56, 189, 248, 0.6)',  // sky-400
+          borderColor: 'rgba(14, 165, 233, 1)',        // sky-500
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { color: '#334155' } },
+          x: { grid: { display: false }, ticks: { color: '#334155' } }
+        }
+      }
+    });
+  }
+
+  // Descargar CSV con TODOS los campos presentes en los datos filtrados
+  function downloadCSV() {
+    const rows = lastRows || [];
+    if (!rows.length) return;
+
+    const allKeys = Array.from(
+      rows.reduce((set, row) => {
+        Object.keys(row).forEach(k => set.add(k));
+        return set;
+      }, new Set())
+    );
+
+    const header = allKeys;
+    const csvLines = [
+      header.join(','),
+      ...rows.map(r => header.map(k => {
+        const val = String(r[k] ?? '');
+        // escape quotes and replace commas to prevent column splits
+        return `"${val.replace(/"/g, '""').replace(/,/g, ';')}"`;
+      }).join(','))
+    ];
+
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'resultados_filtrados.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
